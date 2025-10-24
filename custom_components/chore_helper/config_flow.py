@@ -49,6 +49,24 @@ async def _validate_config(
 
     if const.CONF_CHORE_DAY in data and data[const.CONF_CHORE_DAY] == "0":
         data[const.CONF_CHORE_DAY] = None
+
+    # Auto-determine allocation mode based on people selection
+    people = data.get(const.CONF_PEOPLE, [])
+    people_count = len(people) if people else 0
+
+    if people_count == 0:
+        # No people selected → none
+        data[const.CONF_ALLOCATION_MODE] = "none"
+    elif people_count == 1:
+        # One person selected → single
+        data[const.CONF_ALLOCATION_MODE] = "single"
+    else:
+        # Multiple people selected → require mode selection
+        multiple_mode = data.get(const.CONF_MULTIPLE_PEOPLE_MODE)
+        if not multiple_mode:
+            raise SchemaFlowError("multiple_people_mode_required")
+        data[const.CONF_ALLOCATION_MODE] = multiple_mode
+
     return data
 
 
@@ -117,13 +135,6 @@ def general_schema_definition(
             handler.options,
             const.DEFAULT_SHOW_OVERDUE_TODAY,
         ): bool,
-        optional(
-            const.CONF_ALLOCATION_MODE,
-            handler.options,
-            const.DEFAULT_ALLOCATION_MODE,
-        ): selector.SelectSelector(
-            selector.SelectSelectorConfig(options=const.ALLOCATION_MODE_OPTIONS)
-        ),
         optional(const.CONF_PEOPLE, handler.options, []): selector.EntitySelector(
             selector.EntitySelectorConfig(
                 domain="person",
@@ -131,6 +142,17 @@ def general_schema_definition(
             )
         ),
     }
+
+    # Add multiple people mode selector - suggest current allocation_mode if it's alternating/shared
+    current_allocation_mode = handler.options.get(const.CONF_ALLOCATION_MODE)
+    if current_allocation_mode in ["alternating", "shared"]:
+        schema[optional(const.CONF_MULTIPLE_PEOPLE_MODE, handler.options, current_allocation_mode)] = selector.SelectSelector(
+            selector.SelectSelectorConfig(options=const.MULTIPLE_PEOPLE_MODE_OPTIONS)
+        )
+    else:
+        schema[optional(const.CONF_MULTIPLE_PEOPLE_MODE, handler.options)] = selector.SelectSelector(
+            selector.SelectSelectorConfig(options=const.MULTIPLE_PEOPLE_MODE_OPTIONS)
+        )
 
     return schema
 

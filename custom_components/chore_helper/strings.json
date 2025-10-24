@@ -1,0 +1,8 @@
+{
+  "config": {
+    "error": {
+      "multiple_people_mode_required": "When multiple people are selected, you must choose either 'Alternating' or 'Shared' mode.",
+      "month_day": "Invalid date format. Use MM/DD format."
+    }
+  }
+}
