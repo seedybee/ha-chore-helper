@@ -96,81 +96,171 @@ def optional(
     return vol.Optional(key, description={"suggested_value": suggested_value})
 
 
-def general_schema_definition(
+async def combined_config_schema(
     handler: SchemaConfigFlowHandler | SchemaOptionsFlowHandler,
-) -> Mapping[str, Any]:
-    """Create general schema."""
-    schema = {
-        required(
-            const.CONF_FREQUENCY, handler.options, const.DEFAULT_FREQUENCY
-        ): selector.SelectSelector(
+) -> vol.Schema:
+    """Generate combined single-page config schema."""
+    schema = {}
+    options = handler.options if hasattr(handler, 'options') else {}
+
+    # ========== SECTION: CHORE DETAILS ==========
+    schema[required(CONF_NAME, options)] = selector.TextSelector()
+
+    schema[optional(const.CONF_ICON_NORMAL, options, const.DEFAULT_ICON_NORMAL)] = (
+        selector.IconSelector()
+    )
+    schema[optional(const.CONF_ICON_TOMORROW, options, const.DEFAULT_ICON_TOMORROW)] = (
+        selector.IconSelector()
+    )
+    schema[optional(const.CONF_ICON_TODAY, options, const.DEFAULT_ICON_TODAY)] = (
+        selector.IconSelector()
+    )
+    schema[optional(const.CONF_ICON_OVERDUE, options, const.DEFAULT_ICON_OVERDUE)] = (
+        selector.IconSelector()
+    )
+
+    # ========== SECTION: CHORE RECURRENCE ==========
+    schema[required(const.CONF_FREQUENCY, options, const.DEFAULT_FREQUENCY)] = (
+        selector.SelectSelector(
             selector.SelectSelectorConfig(options=const.FREQUENCY_OPTIONS)
-        ),
-        optional(
-            const.CONF_ICON_NORMAL, handler.options, const.DEFAULT_ICON_NORMAL
-        ): selector.IconSelector(),
-        optional(
-            const.CONF_ICON_TOMORROW, handler.options, const.DEFAULT_ICON_TOMORROW
-        ): selector.IconSelector(),
-        optional(
-            const.CONF_ICON_TODAY, handler.options, const.DEFAULT_ICON_TODAY
-        ): selector.IconSelector(),
-        optional(
-            const.CONF_ICON_OVERDUE, handler.options, const.DEFAULT_ICON_OVERDUE
-        ): selector.IconSelector(),
-        optional(
-            const.CONF_FORECAST_DATES, handler.options, const.DEFAULT_FORECAST_DATES
-        ): selector.NumberSelector(
+        )
+    )
+
+    # Period (for all non-blank frequencies)
+    schema[optional(const.CONF_PERIOD, options, const.DEFAULT_PERIOD)] = (
+        selector.NumberSelector(
+            selector.NumberSelectorConfig(
+                min=1,
+                max=1000,
+                mode=selector.NumberSelectorMode.BOX,
+            )
+        )
+    )
+
+    # Start date
+    schema[optional(const.CONF_START_DATE, options, helpers.now().date())] = (
+        selector.DateSelector()
+    )
+
+    # First/Last month (for seasonal chores)
+    schema[optional(const.CONF_FIRST_MONTH, options, const.DEFAULT_FIRST_MONTH)] = (
+        selector.SelectSelector(
+            selector.SelectSelectorConfig(options=const.MONTH_OPTIONS)
+        )
+    )
+    schema[optional(const.CONF_LAST_MONTH, options, const.DEFAULT_LAST_MONTH)] = (
+        selector.SelectSelector(
+            selector.SelectSelectorConfig(options=const.MONTH_OPTIONS)
+        )
+    )
+
+    # Weekly specific: day of week and first week
+    schema[optional(const.CONF_CHORE_DAY, options)] = (
+        selector.SelectSelector(
+            selector.SelectSelectorConfig(options=const.WEEKDAY_OPTIONS)
+        )
+    )
+    schema[optional(const.CONF_FIRST_WEEK, options, const.DEFAULT_FIRST_WEEK)] = (
+        selector.NumberSelector(
+            selector.NumberSelectorConfig(
+                min=1,
+                max=52,
+                mode=selector.NumberSelectorMode.BOX,
+                unit_of_measurement="weeks",
+            )
+        )
+    )
+
+    # Monthly specific: day of month, weekday order, etc.
+    schema[optional(const.CONF_DAY_OF_MONTH, options)] = (
+        selector.NumberSelector(
+            selector.NumberSelectorConfig(
+                min=0,
+                max=31,
+                mode=selector.NumberSelectorMode.BOX,
+            )
+        )
+    )
+    schema[optional(const.CONF_WEEKDAY_ORDER_NUMBER, options)] = (
+        selector.SelectSelector(
+            selector.SelectSelectorConfig(
+                options=const.ORDER_OPTIONS,
+                mode=selector.SelectSelectorMode.DROPDOWN,
+            )
+        )
+    )
+    schema[optional(const.CONF_FORCE_WEEK_NUMBERS, options, False)] = (
+        selector.BooleanSelector()
+    )
+    schema[optional(const.CONF_DUE_DATE_OFFSET, options, 0)] = (
+        selector.NumberSelector(
+            selector.NumberSelectorConfig(
+                min=-7,
+                max=7,
+                mode=selector.NumberSelectorMode.SLIDER,
+                unit_of_measurement="day(s)",
+            )
+        )
+    )
+
+    # Yearly specific: date (MM/DD)
+    schema[optional(const.CONF_DATE, options)] = selector.TextSelector()
+
+    # ========== SECTION: ALLOCATION ==========
+    schema[optional(const.CONF_PEOPLE, options, [])] = (
+        selector.EntitySelector(
+            selector.EntitySelectorConfig(
+                domain="person",
+                multiple=True,
+            )
+        )
+    )
+
+    # Add multiple people mode selector
+    current_allocation_mode = options.get(const.CONF_ALLOCATION_MODE)
+    if current_allocation_mode in ["alternating", "shared"]:
+        schema[optional(const.CONF_MULTIPLE_PEOPLE_MODE, options, current_allocation_mode)] = (
+            selector.SelectSelector(
+                selector.SelectSelectorConfig(options=const.MULTIPLE_PEOPLE_MODE_OPTIONS)
+            )
+        )
+    else:
+        schema[optional(const.CONF_MULTIPLE_PEOPLE_MODE, options)] = (
+            selector.SelectSelector(
+                selector.SelectSelectorConfig(options=const.MULTIPLE_PEOPLE_MODE_OPTIONS)
+            )
+        )
+
+    # ========== SECTION: ADVANCED OPTIONS ==========
+    schema[optional(const.CONF_FORECAST_DATES, options, const.DEFAULT_FORECAST_DATES)] = (
+        selector.NumberSelector(
             selector.NumberSelectorConfig(
                 min=0,
                 max=100,
                 mode=selector.NumberSelectorMode.BOX,
                 step=1,
             )
-        ),
-        optional(ATTR_HIDDEN, handler.options, False): bool,
-        optional(const.CONF_MANUAL, handler.options, False): bool,
-        optional(
-            const.CONF_SHOW_OVERDUE_TODAY,
-            handler.options,
-            const.DEFAULT_SHOW_OVERDUE_TODAY,
-        ): bool,
-        optional(const.CONF_PEOPLE, handler.options, []): selector.EntitySelector(
-            selector.EntitySelectorConfig(
-                domain="person",
-                multiple=True,
-            )
-        ),
-    }
-
-    # Add multiple people mode selector - suggest current allocation_mode if it's alternating/shared
-    current_allocation_mode = handler.options.get(const.CONF_ALLOCATION_MODE)
-    if current_allocation_mode in ["alternating", "shared"]:
-        schema[optional(const.CONF_MULTIPLE_PEOPLE_MODE, handler.options, current_allocation_mode)] = selector.SelectSelector(
-            selector.SelectSelectorConfig(options=const.MULTIPLE_PEOPLE_MODE_OPTIONS)
         )
-    else:
-        schema[optional(const.CONF_MULTIPLE_PEOPLE_MODE, handler.options)] = selector.SelectSelector(
-            selector.SelectSelectorConfig(options=const.MULTIPLE_PEOPLE_MODE_OPTIONS)
-        )
+    )
+    schema[optional(ATTR_HIDDEN, options, False)] = bool
+    schema[optional(const.CONF_MANUAL, options, False)] = bool
+    schema[optional(const.CONF_SHOW_OVERDUE_TODAY, options, const.DEFAULT_SHOW_OVERDUE_TODAY)] = bool
 
-    return schema
+    return vol.Schema(schema)
 
 
 async def general_config_schema(
     handler: SchemaConfigFlowHandler | SchemaOptionsFlowHandler,
 ) -> vol.Schema:
-    """Generate config schema."""
-    schema_obj = {required(CONF_NAME, handler.options): selector.TextSelector()}
-    schema_obj.update(general_schema_definition(handler))
-    return vol.Schema(schema_obj)
+    """Generate config schema (legacy - kept for compatibility)."""
+    return await combined_config_schema(handler)
 
 
 async def general_options_schema(
     handler: SchemaConfigFlowHandler | SchemaOptionsFlowHandler,
 ) -> vol.Schema:
-    """Generate options schema."""
-    return vol.Schema(general_schema_definition(handler))
+    """Generate options schema (legacy - kept for compatibility)."""
+    return await combined_config_schema(handler)
 
 
 async def detail_config_schema(
@@ -294,22 +384,11 @@ async def detail_config_schema(
     return vol.Schema(options_schema)
 
 
-async def choose_details_step(_: dict[str, Any]) -> str:
-    """Return next step_id for options flow."""
-    return "detail"
-
-
 CONFIG_FLOW: dict[str, SchemaFlowFormStep | SchemaFlowMenuStep] = {
-    "user": SchemaFlowFormStep(general_config_schema, next_step=choose_details_step),
-    "detail": SchemaFlowFormStep(
-        detail_config_schema, validate_user_input=_validate_config
-    ),
+    "user": SchemaFlowFormStep(combined_config_schema, validate_user_input=_validate_config),
 }
 OPTIONS_FLOW: dict[str, SchemaFlowFormStep | SchemaFlowMenuStep] = {
-    "init": SchemaFlowFormStep(general_options_schema, next_step=choose_details_step),
-    "detail": SchemaFlowFormStep(
-        detail_config_schema, validate_user_input=_validate_config
-    ),
+    "init": SchemaFlowFormStep(combined_config_schema, validate_user_input=_validate_config),
 }
 
 
