@@ -36,11 +36,7 @@ CONF_FORECAST_DATES = "forecast_dates"
 CONF_SHOW_OVERDUE_TODAY = "show_overdue_today"
 CONF_FREQUENCY = "frequency"
 CONF_MANUAL = "manual_update"
-CONF_ICON = "icon"  # Single icon for simplified UI
-CONF_ICON_NORMAL = "icon_normal"
-CONF_ICON_TODAY = "icon_today"
-CONF_ICON_TOMORROW = "icon_tomorrow"
-CONF_ICON_OVERDUE = "icon_overdue"
+CONF_ICON = "icon"
 CONF_OFFSET = "offset"
 CONF_DAY_OF_MONTH = "day_of_month"
 CONF_DUE_DATE_OFFSET = "due_date_offset"
@@ -80,28 +76,13 @@ DEFAULT_DATE_FORMAT = "%b-%d-%Y"
 DEFAULT_FORECAST_DATES = 10
 DEFAULT_SHOW_OVERDUE_TODAY = False
 
-DEFAULT_ICON_NORMAL = "mdi:broom"
-DEFAULT_ICON_TODAY = "mdi:bell"
-DEFAULT_ICON_TOMORROW = "mdi:bell-outline"
-DEFAULT_ICON_OVERDUE = "mdi:bell-alert"
-DEFAULT_ICON = "mdi:broom"  # Single icon for simplified UI
-ICON = DEFAULT_ICON_NORMAL
+DEFAULT_ICON = "mdi:broom"
+ICON = DEFAULT_ICON
 
 STATE_TODAY = "today"
 STATE_TOMORROW = "tomorrow"
 
-FREQUENCY_OPTIONS = [
-    selector.SelectOptionDict(value="every-n-days", label="Every [x] days"),
-    selector.SelectOptionDict(value="every-n-weeks", label="Every [x] weeks"),
-    selector.SelectOptionDict(value="every-n-months", label="Every [x] months"),
-    selector.SelectOptionDict(value="every-n-years", label="Every [x] years"),
-    selector.SelectOptionDict(value="after-n-days", label="After [x] days"),
-    selector.SelectOptionDict(value="after-n-weeks", label="After [x] weeks"),
-    selector.SelectOptionDict(value="after-n-months", label="After [x] months"),
-    selector.SelectOptionDict(value="after-n-years", label="After [x] years"),
-    selector.SelectOptionDict(value="blank", label="Manual"),
-]
-
+# Internal frequency codes (used by backend, mapped from UI patterns)
 DAILY_FREQUENCY = ["every-n-days", "after-n-days"]
 WEEKLY_FREQUENCY = ["every-n-weeks", "after-n-weeks"]
 MONTHLY_FREQUENCY = ["every-n-months", "after-n-months"]
@@ -145,13 +126,6 @@ ORDER_OPTIONS = [
     selector.SelectOptionDict(value="-2", label="2nd from last"),
     selector.SelectOptionDict(value="-3", label="3rd from last"),
     selector.SelectOptionDict(value="-4", label="4th from last"),
-]
-
-ALLOCATION_MODE_OPTIONS = [
-    selector.SelectOptionDict(value="none", label="None"),
-    selector.SelectOptionDict(value="single", label="Single person"),
-    selector.SelectOptionDict(value="alternating", label="Alternating"),
-    selector.SelectOptionDict(value="shared", label="Shared"),
 ]
 
 MULTIPLE_PEOPLE_MODE_OPTIONS = [

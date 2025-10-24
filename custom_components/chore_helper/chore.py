@@ -34,10 +34,6 @@ class Chore(RestoreEntity):
         "_days",
         "_first_month",
         "_hidden",
-        "_icon_normal",
-        "_icon_today",
-        "_icon_tomorrow",
-        "_icon_overdue",
         "_last_month",
         "_last_updated",
         "_manual",
@@ -82,20 +78,8 @@ class Chore(RestoreEntity):
         self._last_month: int = (
             months.index(last_month) + 1 if last_month in months else 12
         )
-        # Support both single icon (new) and 4 icons (legacy)
-        single_icon = config.get(const.CONF_ICON)
-        if single_icon:
-            # Use single icon for all states (simplified UI)
-            self._icon_normal = single_icon
-            self._icon_today = single_icon
-            self._icon_tomorrow = single_icon
-            self._icon_overdue = single_icon
-        else:
-            # Fall back to 4 separate icons (backward compatibility)
-            self._icon_normal = config.get(const.CONF_ICON_NORMAL)
-            self._icon_today = config.get(const.CONF_ICON_TODAY)
-            self._icon_tomorrow = config.get(const.CONF_ICON_TOMORROW)
-            self._icon_overdue = config.get(const.CONF_ICON_OVERDUE)
+        # Single icon for all states
+        self._attr_icon = config.get(const.CONF_ICON, const.DEFAULT_ICON)
         self._date_format = config.get(
             const.CONF_DATE_FORMAT, const.DEFAULT_DATE_FORMAT
         )
@@ -112,7 +96,6 @@ class Chore(RestoreEntity):
         self._overdue_days: int | None = None
         self._frequency: str = config.get(const.CONF_FREQUENCY)
         self._attr_state = self._days
-        self._attr_icon = self._icon_normal
         self._start_date: date | None
         self._offset_dates: str = None
         self._add_dates: str = None
@@ -604,20 +587,11 @@ class Chore(RestoreEntity):
                 self._days,
             )
             self._attr_state = self._days
-            if self._days > 1:
-                self._attr_icon = self._icon_normal
-            elif self._days < 0:
-                self._attr_icon = self._icon_overdue
-            elif self._days == 0:
-                self._attr_icon = self._icon_today
-            elif self._days == 1:
-                self._attr_icon = self._icon_tomorrow
             self._overdue = self._days < 0
             self._overdue_days = 0 if self._days > -1 else abs(self._days)
         else:
             self._days = None
             self._attr_state = None
-            self._attr_icon = self._icon_normal
             self._overdue = False
             self._overdue_days = None
 

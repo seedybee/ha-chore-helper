@@ -166,17 +166,9 @@ async def combined_config_schema(
     )
 
     # ========== RECURRENCE PATTERN ==========
-    # Recurrence type selector
     schema[optional(const.CONF_RECURRENCE_TYPE, options, const.DEFAULT_RECURRENCE_TYPE)] = (
         selector.SelectSelector(
             selector.SelectSelectorConfig(options=const.RECURRENCE_TYPE_OPTIONS)
-        )
-    )
-
-    # Legacy frequency field (kept for backward compatibility)
-    schema[optional(const.CONF_FREQUENCY, options, const.DEFAULT_FREQUENCY)] = (
-        selector.SelectSelector(
-            selector.SelectSelectorConfig(options=const.FREQUENCY_OPTIONS)
         )
     )
 
@@ -285,54 +277,6 @@ async def combined_config_schema(
         )
     )
 
-    # Legacy fields (kept for backward compatibility)
-    schema[optional(const.CONF_CHORE_DAY, options)] = (
-        selector.SelectSelector(
-            selector.SelectSelectorConfig(options=const.WEEKDAY_OPTIONS)
-        )
-    )
-    schema[optional(const.CONF_FIRST_WEEK, options, const.DEFAULT_FIRST_WEEK)] = (
-        selector.NumberSelector(
-            selector.NumberSelectorConfig(
-                min=1,
-                max=52,
-                mode=selector.NumberSelectorMode.BOX,
-                unit_of_measurement="weeks",
-            )
-        )
-    )
-    schema[optional(const.CONF_DAY_OF_MONTH, options)] = (
-        selector.NumberSelector(
-            selector.NumberSelectorConfig(
-                min=0,
-                max=31,
-                mode=selector.NumberSelectorMode.BOX,
-            )
-        )
-    )
-    schema[optional(const.CONF_WEEKDAY_ORDER_NUMBER, options)] = (
-        selector.SelectSelector(
-            selector.SelectSelectorConfig(
-                options=const.ORDER_OPTIONS,
-                mode=selector.SelectSelectorMode.DROPDOWN,
-            )
-        )
-    )
-    schema[optional(const.CONF_FORCE_WEEK_NUMBERS, options, False)] = (
-        selector.BooleanSelector()
-    )
-    schema[optional(const.CONF_DUE_DATE_OFFSET, options, 0)] = (
-        selector.NumberSelector(
-            selector.NumberSelectorConfig(
-                min=-7,
-                max=7,
-                mode=selector.NumberSelectorMode.SLIDER,
-                unit_of_measurement="day(s)",
-            )
-        )
-    )
-    schema[optional(const.CONF_DATE, options)] = selector.TextSelector()
-
     # ========== PERSON ALLOCATION ==========
     schema[optional(const.CONF_PEOPLE, options, [])] = (
         selector.EntitySelector(
@@ -374,141 +318,6 @@ async def combined_config_schema(
     schema[optional(const.CONF_SHOW_OVERDUE_TODAY, options, const.DEFAULT_SHOW_OVERDUE_TODAY)] = bool
 
     return vol.Schema(schema)
-
-
-async def general_config_schema(
-    handler: SchemaConfigFlowHandler | SchemaOptionsFlowHandler,
-) -> vol.Schema:
-    """Generate config schema (legacy - kept for compatibility)."""
-    return await combined_config_schema(handler)
-
-
-async def general_options_schema(
-    handler: SchemaConfigFlowHandler | SchemaOptionsFlowHandler,
-) -> vol.Schema:
-    """Generate options schema (legacy - kept for compatibility)."""
-    return await combined_config_schema(handler)
-
-
-async def detail_config_schema(
-    handler: SchemaConfigFlowHandler | SchemaOptionsFlowHandler,
-) -> vol.Schema:
-    """Generate options schema."""
-    options_schema: dict[vol.Optional | vol.Required, Any] = {}
-    frequency = handler.options[const.CONF_FREQUENCY]
-
-    if frequency not in const.BLANK_FREQUENCY:
-        if frequency in (
-            const.DAILY_FREQUENCY
-            + const.WEEKLY_FREQUENCY
-            + const.MONTHLY_FREQUENCY
-            + const.YEARLY_FREQUENCY
-        ):
-            uom = {
-                "every-n-days": "day(s)",
-                "every-n-weeks": "week(s)",
-                "every-n-months": "month(s)",
-                "every-n-years": "year(s)",
-                "after-n-days": "day(s)",
-                "after-n-weeks": "week(s)",
-                "after-n-months": "month(s)",
-                "after-n-years": "year(s)",
-            }
-            options_schema[required(const.CONF_PERIOD, handler.options)] = (
-                selector.NumberSelector(
-                    selector.NumberSelectorConfig(
-                        min=1,
-                        max=1000,
-                        mode=selector.NumberSelectorMode.BOX,
-                        unit_of_measurement=uom[frequency],
-                    )
-                )
-            )
-
-        if frequency in const.YEARLY_FREQUENCY:
-            options_schema[optional(const.CONF_DATE, handler.options)] = (
-                selector.TextSelector()
-            )
-
-        if frequency in const.MONTHLY_FREQUENCY:
-            options_schema[optional(const.CONF_DAY_OF_MONTH, handler.options)] = (
-                selector.NumberSelector(
-                    selector.NumberSelectorConfig(
-                        min=0,
-                        max=31,
-                        mode=selector.NumberSelectorMode.BOX,
-                    )
-                )
-            )
-
-            options_schema[
-                optional(const.CONF_WEEKDAY_ORDER_NUMBER, handler.options)
-            ] = selector.SelectSelector(
-                selector.SelectSelectorConfig(
-                    options=const.ORDER_OPTIONS,
-                    mode=selector.SelectSelectorMode.DROPDOWN,
-                )
-            )
-
-            options_schema[optional(const.CONF_FORCE_WEEK_NUMBERS, handler.options)] = (
-                selector.BooleanSelector()
-            )
-
-            options_schema[optional(const.CONF_DUE_DATE_OFFSET, handler.options)] = (
-                selector.NumberSelector(
-                    selector.NumberSelectorConfig(
-                        min=-7,
-                        max=7,
-                        mode=selector.NumberSelectorMode.SLIDER,
-                        unit_of_measurement="day(s)",
-                    )
-                )
-            )
-
-        if frequency in (const.WEEKLY_FREQUENCY + const.MONTHLY_FREQUENCY):
-            options_schema[optional(const.CONF_CHORE_DAY, handler.options)] = (
-                selector.SelectSelector(
-                    selector.SelectSelectorConfig(
-                        options=const.WEEKDAY_OPTIONS,
-                    )
-                )
-            )
-
-        if frequency in const.WEEKLY_FREQUENCY:
-            options_schema[
-                required(
-                    const.CONF_FIRST_WEEK, handler.options, const.DEFAULT_FIRST_WEEK
-                )
-            ] = selector.NumberSelector(
-                selector.NumberSelectorConfig(
-                    min=1,
-                    max=52,
-                    mode=selector.NumberSelectorMode.BOX,
-                    unit_of_measurement="weeks",
-                )
-            )
-
-        if frequency not in const.YEARLY_FREQUENCY:
-            options_schema[
-                optional(
-                    const.CONF_FIRST_MONTH, handler.options, const.DEFAULT_FIRST_MONTH
-                )
-            ] = selector.SelectSelector(
-                selector.SelectSelectorConfig(options=const.MONTH_OPTIONS)
-            )
-            options_schema[
-                optional(
-                    const.CONF_LAST_MONTH, handler.options, const.DEFAULT_LAST_MONTH
-                )
-            ] = selector.SelectSelector(
-                selector.SelectSelectorConfig(options=const.MONTH_OPTIONS)
-            )
-
-        options_schema[
-            required(const.CONF_START_DATE, handler.options, helpers.now().date())
-        ] = selector.DateSelector()
-
-    return vol.Schema(options_schema)
 
 
 CONFIG_FLOW: dict[str, SchemaFlowFormStep | SchemaFlowMenuStep] = {
