@@ -50,6 +50,9 @@ class Chore(RestoreEntity):
         "_offset_dates",
         "_add_dates",
         "_remove_dates",
+        "_allocation_mode",
+        "_people",
+        "_assigned_to",
         "show_overdue_today",
         "config_entry",
         "last_completed",
@@ -100,6 +103,11 @@ class Chore(RestoreEntity):
         self._offset_dates: str = None
         self._add_dates: str = None
         self._remove_dates: str = None
+        self._allocation_mode: str = config.get(
+            const.CONF_ALLOCATION_MODE, const.DEFAULT_ALLOCATION_MODE
+        )
+        self._people: str = config.get(const.CONF_PEOPLE, "")
+        self._assigned_to: str | None = None
         try:
             self._start_date = helpers.to_date(config.get(const.CONF_START_DATE))
         except ValueError:
@@ -133,6 +141,11 @@ class Chore(RestoreEntity):
             self._offset_dates = state.attributes.get(const.ATTR_OFFSET_DATES, None)
             self._add_dates = state.attributes.get(const.ATTR_ADD_DATES, None)
             self._remove_dates = state.attributes.get(const.ATTR_REMOVE_DATES, None)
+            self._assigned_to = state.attributes.get(const.ATTR_ASSIGNED_TO, None)
+
+        # Initialize person assignment if not restored and allocation is enabled
+        if self._assigned_to is None and self._allocation_mode in ["single", "alternating"]:
+            self._initialize_assignment()
 
         # Create or add to calendar
         if not self.hidden:
@@ -156,6 +169,42 @@ class Chore(RestoreEntity):
         self.hass.data[const.DOMAIN][const.CALENDAR_PLATFORM].remove_entity(
             self.entity_id
         )
+
+    def _initialize_assignment(self) -> None:
+        """Initialize person assignment for single or alternating mode."""
+        if not self._people:
+            return
+
+        people_list = [p.strip() for p in self._people.split(",") if p.strip()]
+        if people_list:
+            self._assigned_to = people_list[0]
+
+    def _get_next_person(self) -> str | None:
+        """Get the next person in rotation for alternating mode."""
+        if not self._people or self._allocation_mode != "alternating":
+            return self._assigned_to
+
+        people_list = [p.strip() for p in self._people.split(",") if p.strip()]
+        if not people_list:
+            return None
+
+        # If no one is assigned yet, return the first person
+        if not self._assigned_to:
+            return people_list[0]
+
+        # Find current person and return next in list (wrap around)
+        try:
+            current_index = people_list.index(self._assigned_to)
+            next_index = (current_index + 1) % len(people_list)
+            return people_list[next_index]
+        except ValueError:
+            # Current person not in list, return first person
+            return people_list[0]
+
+    def rotate_person(self) -> None:
+        """Rotate to the next person for alternating allocation mode."""
+        if self._allocation_mode == "alternating":
+            self._assigned_to = self._get_next_person()
 
     @property
     def unique_id(self) -> str:
@@ -200,6 +249,21 @@ class Chore(RestoreEntity):
         return self._remove_dates
 
     @property
+    def allocation_mode(self) -> str:
+        """Return allocation_mode attribute."""
+        return self._allocation_mode
+
+    @property
+    def people(self) -> str:
+        """Return people attribute."""
+        return self._people
+
+    @property
+    def assigned_to(self) -> str | None:
+        """Return assigned_to attribute."""
+        return self._assigned_to
+
+    @property
     def hidden(self) -> bool:
         """Return the hidden attribute."""
         return self._hidden
@@ -236,6 +300,9 @@ class Chore(RestoreEntity):
             const.ATTR_OFFSET_DATES: self.offset_dates,
             const.ATTR_ADD_DATES: self.add_dates,
             const.ATTR_REMOVE_DATES: self.remove_dates,
+            const.ATTR_ALLOCATION_MODE: self.allocation_mode,
+            const.ATTR_PEOPLE: self.people,
+            const.ATTR_ASSIGNED_TO: self.assigned_to,
             ATTR_UNIT_OF_MEASUREMENT: self.native_unit_of_measurement,
             # Needed for translations to work
             ATTR_DEVICE_CLASS: self.DEVICE_CLASS,

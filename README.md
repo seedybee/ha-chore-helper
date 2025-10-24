@@ -96,11 +96,32 @@ The main state value for a chore is the number of days until (or since) the next
 
 The other attributes are the next due date, the last completed date, whether the chore is overdue, and the number of days overdue.
 
+### Person Allocation
+
+Chore Helper supports assigning chores to specific people in your household. There are four allocation modes:
+
+1. **None** - No person allocation. The chore is not assigned to anyone specifically.
+
+2. **Single** - Assign the chore to one specific person. The chore will always be assigned to this person.
+
+3. **Alternating** - Assign the chore to people in rotation. Each time the chore is completed, it will automatically rotate to the next person in the list. This is perfect for chores that should be shared among household members.
+
+4. **Shared** - The chore appears in everyone's list. This is useful for chores that anyone can complete, or chores that require everyone's participation.
+
+To configure person allocation:
+1. When creating or editing a chore, select the desired allocation mode.
+2. If you choose "Single", "Alternating", or "Shared", enter the names of people in the "People" field as a comma-separated list (e.g., "John, Jane, Bob").
+3. For "Single" mode, the chore will be assigned to the first person in the list.
+4. For "Alternating" mode, the chore will start with the first person and rotate through the list each time it's completed.
+5. For "Shared" mode, the chore will appear for all people regardless of who's in the list.
+
+The current assigned person is stored in the `assigned_to` attribute of the chore sensor.
+
 ## Services
 
 ### chore_helper.complete
 
-This service can be called to mark a chore as completed. It will automatically schedule the next due date for the chore, and adjust future due dates if necessary (e.g. when scheduling "after" chores).
+This service can be called to mark a chore as completed. It will automatically schedule the next due date for the chore, and adjust future due dates if necessary (e.g. when scheduling "after" chores). For chores with alternating person allocation, this will automatically rotate to the next person in the list.
 
 | Service Data Attribute | Optional | Description                                                                             |
 | ---------------------- | -------- | --------------------------------------------------------------------------------------- |
@@ -138,6 +159,18 @@ This service can be called to remove a chore date (e.g. skip a chore). This remo
 ### chore_helper.update_state
 
 This service can be called to update the state of a chore. This is mainly useful for custom chores that don't automatically update themselves.
+
+### chore_helper.get_chores_by_person
+
+This service can be called to get all chores assigned to a specific person. It returns chores that are either:
+- Assigned to the person in single or alternating mode
+- Configured as shared (appear for everyone)
+
+| Service Data Attribute | Optional | Description                                     |
+| ---------------------- | -------- | ----------------------------------------------- |
+| `person`               | No       | The name of the person to get chores for.       |
+
+The service returns a dictionary with a `chores` key containing a list of matching chores with their details.
 
 ## Contributions are welcome!
 

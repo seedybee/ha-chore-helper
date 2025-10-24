@@ -22,6 +22,9 @@ ATTR_OVERDUE_DAYS = "overdue_days"
 ATTR_OFFSET_DATES = "offset_dates"
 ATTR_ADD_DATES = "add_dates"
 ATTR_REMOVE_DATES = "remove_dates"
+ATTR_ASSIGNED_TO = "assigned_to"
+ATTR_ALLOCATION_MODE = "allocation_mode"
+ATTR_PEOPLE = "people"
 
 BINARY_SENSOR_DEVICE_CLASS = "connectivity"
 DEVICE_CLASS = "chore_helper__schedule"
@@ -51,6 +54,8 @@ CONF_FIRST_WEEK = "first_week"
 CONF_START_DATE = "start_date"
 CONF_SENSORS = "sensors"
 CONF_DATE_FORMAT = "date_format"
+CONF_ALLOCATION_MODE = "allocation_mode"
+CONF_PEOPLE = "people"
 
 DEFAULT_NAME = DOMAIN
 DEFAULT_FIRST_MONTH = "jan"
@@ -127,3 +132,12 @@ ORDER_OPTIONS = [
     selector.SelectOptionDict(value="-3", label="3rd from last"),
     selector.SelectOptionDict(value="-4", label="4th from last"),
 ]
+
+ALLOCATION_MODE_OPTIONS = [
+    selector.SelectOptionDict(value="none", label="None (No person allocation)"),
+    selector.SelectOptionDict(value="single", label="Single person"),
+    selector.SelectOptionDict(value="alternating", label="Alternating (rotate on completion)"),
+    selector.SelectOptionDict(value="shared", label="Shared (all people)"),
+]
+
+DEFAULT_ALLOCATION_MODE = "none"

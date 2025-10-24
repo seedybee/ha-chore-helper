@@ -112,6 +112,12 @@ OFFSET_DATE_SCHEMA = vol.Schema(
     }
 )
 
+GET_CHORES_BY_PERSON_SCHEMA = vol.Schema(
+    {
+        vol.Required("person"): cv.string,
+    }
+)
+
 
 # pylint: disable=unused-argument
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
@@ -190,11 +196,46 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
             try:
                 entity = hass.data[const.DOMAIN][const.SENSOR_PLATFORM][entity_id]
                 entity.last_completed = dt_util.as_local(last_completed)
+                # Rotate person for alternating allocation mode
+                entity.rotate_person()
                 entity.update_state()
             except KeyError as err:
                 LOGGER.error(
                     "Failed setting last completed for %s - %s", entity_id, err
                 )
+
+    async def handle_get_chores_by_person(call: ServiceCall) -> dict:
+        """Handle the get_chores_by_person service call."""
+        person = call.data.get("person", "")
+        chores = []
+
+        for entity_id, entity in hass.data[const.DOMAIN][const.SENSOR_PLATFORM].items():
+            allocation_mode = entity.allocation_mode
+            assigned_to = entity.assigned_to
+
+            # Include chore if:
+            # 1. Shared mode - appears for everyone
+            # 2. Single/Alternating mode - matches the assigned person
+            if allocation_mode == "shared":
+                chores.append({
+                    "entity_id": entity_id,
+                    "name": entity.name,
+                    "next_due_date": str(entity.next_due_date) if entity.next_due_date else None,
+                    "days": entity._days,
+                    "allocation_mode": allocation_mode,
+                })
+            elif allocation_mode in ["single", "alternating"] and assigned_to == person:
+                chores.append({
+                    "entity_id": entity_id,
+                    "name": entity.name,
+                    "next_due_date": str(entity.next_due_date) if entity.next_due_date else None,
+                    "days": entity._days,
+                    "allocation_mode": allocation_mode,
+                    "assigned_to": assigned_to,
+                })
+
+        LOGGER.debug("Found %d chores for person %s", len(chores), person)
+        return {"chores": chores}
 
     hass.data.setdefault(const.DOMAIN, {})
     hass.data[const.DOMAIN].setdefault(const.SENSOR_PLATFORM, {})
@@ -221,6 +262,13 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     )
     hass.services.async_register(
         const.DOMAIN, "offset_date", handle_offset_date, schema=OFFSET_DATE_SCHEMA
+    )
+    hass.services.async_register(
+        const.DOMAIN,
+        "get_chores_by_person",
+        handle_get_chores_by_person,
+        schema=GET_CHORES_BY_PERSON_SCHEMA,
+        supports_response=True,
     )
     return True
 
