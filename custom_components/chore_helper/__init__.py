@@ -114,7 +114,7 @@ OFFSET_DATE_SCHEMA = vol.Schema(
 
 GET_CHORES_BY_PERSON_SCHEMA = vol.Schema(
     {
-        vol.Required("person"): cv.string,
+        vol.Required("person"): cv.entity_id,
     }
 )
 
@@ -206,25 +206,27 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 
     async def handle_get_chores_by_person(call: ServiceCall) -> dict:
         """Handle the get_chores_by_person service call."""
-        person = call.data.get("person", "")
+        person_entity = call.data.get("person", "")
         chores = []
 
         for entity_id, entity in hass.data[const.DOMAIN][const.SENSOR_PLATFORM].items():
             allocation_mode = entity.allocation_mode
             assigned_to = entity.assigned_to
+            people_list = entity.people
 
             # Include chore if:
-            # 1. Shared mode - appears for everyone
+            # 1. Shared mode - person is in the people list
             # 2. Single/Alternating mode - matches the assigned person
-            if allocation_mode == "shared":
+            if allocation_mode == "shared" and person_entity in people_list:
                 chores.append({
                     "entity_id": entity_id,
                     "name": entity.name,
                     "next_due_date": str(entity.next_due_date) if entity.next_due_date else None,
                     "days": entity._days,
                     "allocation_mode": allocation_mode,
+                    "assigned_to_name": entity.assigned_to_name,
                 })
-            elif allocation_mode in ["single", "alternating"] and assigned_to == person:
+            elif allocation_mode in ["single", "alternating"] and assigned_to == person_entity:
                 chores.append({
                     "entity_id": entity_id,
                     "name": entity.name,
@@ -232,9 +234,10 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
                     "days": entity._days,
                     "allocation_mode": allocation_mode,
                     "assigned_to": assigned_to,
+                    "assigned_to_name": entity.assigned_to_name,
                 })
 
-        LOGGER.debug("Found %d chores for person %s", len(chores), person)
+        LOGGER.debug("Found %d chores for person %s", len(chores), person_entity)
         return {"chores": chores}
 
     hass.data.setdefault(const.DOMAIN, {})

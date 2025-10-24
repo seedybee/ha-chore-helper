@@ -23,6 +23,7 @@ ATTR_OFFSET_DATES = "offset_dates"
 ATTR_ADD_DATES = "add_dates"
 ATTR_REMOVE_DATES = "remove_dates"
 ATTR_ASSIGNED_TO = "assigned_to"
+ATTR_ASSIGNED_TO_NAME = "assigned_to_name"
 ATTR_ALLOCATION_MODE = "allocation_mode"
 ATTR_PEOPLE = "people"
 

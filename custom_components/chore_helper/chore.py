@@ -106,7 +106,13 @@ class Chore(RestoreEntity):
         self._allocation_mode: str = config.get(
             const.CONF_ALLOCATION_MODE, const.DEFAULT_ALLOCATION_MODE
         )
-        self._people: str = config.get(const.CONF_PEOPLE, "")
+        # Handle people as list (new format) or string (backward compatibility)
+        people_config = config.get(const.CONF_PEOPLE, [])
+        if isinstance(people_config, str):
+            # Backward compatibility: convert comma-separated string to list
+            self._people: list[str] = [p.strip() for p in people_config.split(",") if p.strip()]
+        else:
+            self._people: list[str] = people_config if people_config else []
         self._assigned_to: str | None = None
         try:
             self._start_date = helpers.to_date(config.get(const.CONF_START_DATE))
@@ -170,36 +176,52 @@ class Chore(RestoreEntity):
             self.entity_id
         )
 
+    def _get_person_name(self, entity_id: str) -> str:
+        """Get the friendly name for a person entity."""
+        if not entity_id:
+            return ""
+
+        # If it doesn't look like an entity_id, return as-is (backward compatibility)
+        if "." not in entity_id:
+            return entity_id
+
+        try:
+            state = self.hass.states.get(entity_id)
+            if state and state.attributes.get("friendly_name"):
+                return state.attributes.get("friendly_name")
+            # Fallback to entity name without domain
+            return entity_id.split(".", 1)[1].replace("_", " ").title()
+        except (AttributeError, IndexError):
+            return entity_id
+
     def _initialize_assignment(self) -> None:
         """Initialize person assignment for single or alternating mode."""
         if not self._people:
             return
 
-        people_list = [p.strip() for p in self._people.split(",") if p.strip()]
-        if people_list:
-            self._assigned_to = people_list[0]
+        if self._people:
+            self._assigned_to = self._people[0]
 
     def _get_next_person(self) -> str | None:
         """Get the next person in rotation for alternating mode."""
         if not self._people or self._allocation_mode != "alternating":
             return self._assigned_to
 
-        people_list = [p.strip() for p in self._people.split(",") if p.strip()]
-        if not people_list:
+        if not self._people:
             return None
 
         # If no one is assigned yet, return the first person
         if not self._assigned_to:
-            return people_list[0]
+            return self._people[0]
 
         # Find current person and return next in list (wrap around)
         try:
-            current_index = people_list.index(self._assigned_to)
-            next_index = (current_index + 1) % len(people_list)
-            return people_list[next_index]
+            current_index = self._people.index(self._assigned_to)
+            next_index = (current_index + 1) % len(self._people)
+            return self._people[next_index]
         except ValueError:
             # Current person not in list, return first person
-            return people_list[0]
+            return self._people[0]
 
     def rotate_person(self) -> None:
         """Rotate to the next person for alternating allocation mode."""
@@ -254,14 +276,21 @@ class Chore(RestoreEntity):
         return self._allocation_mode
 
     @property
-    def people(self) -> str:
+    def people(self) -> list[str]:
         """Return people attribute."""
         return self._people
 
     @property
     def assigned_to(self) -> str | None:
-        """Return assigned_to attribute."""
+        """Return assigned_to entity ID attribute."""
         return self._assigned_to
+
+    @property
+    def assigned_to_name(self) -> str | None:
+        """Return assigned_to friendly name attribute."""
+        if self._assigned_to:
+            return self._get_person_name(self._assigned_to)
+        return None
 
     @property
     def hidden(self) -> bool:
@@ -303,6 +332,7 @@ class Chore(RestoreEntity):
             const.ATTR_ALLOCATION_MODE: self.allocation_mode,
             const.ATTR_PEOPLE: self.people,
             const.ATTR_ASSIGNED_TO: self.assigned_to,
+            const.ATTR_ASSIGNED_TO_NAME: self.assigned_to_name,
             ATTR_UNIT_OF_MEASUREMENT: self.native_unit_of_measurement,
             # Needed for translations to work
             ATTR_DEVICE_CLASS: self.DEVICE_CLASS,

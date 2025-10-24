@@ -98,7 +98,7 @@ The other attributes are the next due date, the last completed date, whether the
 
 ### Person Allocation
 
-Chore Helper supports assigning chores to specific people in your household. There are four allocation modes:
+Chore Helper integrates with Home Assistant's Person entities to assign chores to specific people in your household. There are four allocation modes:
 
 1. **None** - No person allocation. The chore is not assigned to anyone specifically.
 
@@ -108,14 +108,24 @@ Chore Helper supports assigning chores to specific people in your household. The
 
 4. **Shared** - The chore appears in everyone's list. This is useful for chores that anyone can complete, or chores that require everyone's participation.
 
-To configure person allocation:
-1. When creating or editing a chore, select the desired allocation mode.
-2. If you choose "Single", "Alternating", or "Shared", enter the names of people in the "People" field as a comma-separated list (e.g., "John, Jane, Bob").
-3. For "Single" mode, the chore will be assigned to the first person in the list.
-4. For "Alternating" mode, the chore will start with the first person and rotate through the list each time it's completed.
-5. For "Shared" mode, the chore will appear for all people regardless of who's in the list.
+#### Configuring Person Allocation
 
-The current assigned person is stored in the `assigned_to` attribute of the chore sensor.
+1. First, ensure you have created Person entities in Home Assistant (Settings → People)
+2. When creating or editing a chore, select the desired allocation mode
+3. If you choose "Single", "Alternating", or "Shared", select people from the "People" dropdown
+   - You can select multiple people for "Alternating" and "Shared" modes
+   - For "Single" mode, select one person (the first person in your selection will be used)
+4. For "Single" mode, the chore will always be assigned to the selected person
+5. For "Alternating" mode, the chore starts with the first person and rotates through the list each time it's completed
+6. For "Shared" mode, the chore appears for all selected people
+
+#### Person Attributes
+
+The chore sensor exposes the following person-related attributes:
+- `assigned_to`: The entity_id of the currently assigned person (e.g., `person.john`)
+- `assigned_to_name`: The friendly name of the currently assigned person (displayed as a chip in the UI)
+- `people`: List of person entity_ids configured for this chore
+- `allocation_mode`: The allocation mode (none, single, alternating, or shared)
 
 ## Services
 
@@ -164,13 +174,20 @@ This service can be called to update the state of a chore. This is mainly useful
 
 This service can be called to get all chores assigned to a specific person. It returns chores that are either:
 - Assigned to the person in single or alternating mode
-- Configured as shared (appear for everyone)
+- Configured as shared and the person is in the people list
 
-| Service Data Attribute | Optional | Description                                     |
-| ---------------------- | -------- | ----------------------------------------------- |
-| `person`               | No       | The name of the person to get chores for.       |
+| Service Data Attribute | Optional | Description                                                   |
+| ---------------------- | -------- | ------------------------------------------------------------- |
+| `person`               | No       | The entity_id of the person entity (e.g., `person.john`).     |
 
-The service returns a dictionary with a `chores` key containing a list of matching chores with their details.
+The service returns a dictionary with a `chores` key containing a list of matching chores with their details including name, due date, allocation mode, and assigned person name.
+
+Example usage in an automation:
+```yaml
+service: chore_helper.get_chores_by_person
+data:
+  person: person.john
+```
 
 ## Contributions are welcome!
 
