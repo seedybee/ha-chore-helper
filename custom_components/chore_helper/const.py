@@ -57,6 +57,7 @@ CONF_SENSORS = "sensors"
 CONF_DATE_FORMAT = "date_format"
 CONF_ALLOCATION_MODE = "allocation_mode"
 CONF_PEOPLE = "people"
+CONF_MULTIPLE_PEOPLE_MODE = "multiple_people_mode"
 
 DEFAULT_NAME = DOMAIN
 DEFAULT_FIRST_MONTH = "jan"
@@ -139,6 +140,11 @@ ALLOCATION_MODE_OPTIONS = [
     selector.SelectOptionDict(value="single", label="Single person"),
     selector.SelectOptionDict(value="alternating", label="Alternating (rotate on completion)"),
     selector.SelectOptionDict(value="shared", label="Shared (all people)"),
+]
+
+MULTIPLE_PEOPLE_MODE_OPTIONS = [
+    selector.SelectOptionDict(value="alternating", label="Alternating (rotate on completion)"),
+    selector.SelectOptionDict(value="shared", label="Shared (appears for all selected people)"),
 ]
 
 DEFAULT_ALLOCATION_MODE = "none"
