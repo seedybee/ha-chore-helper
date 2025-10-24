@@ -64,9 +64,12 @@ update_state:
       description: The chore sensor entity_id.
       example: sensor.sweep_floor
 get_chores_by_person:
-  description: Get all chores assigned to a specific person or shared with everyone. Returns chores in single/alternating mode assigned to the person, and all shared chores.
+  description: Get all chores assigned to a specific person or shared with everyone. Returns chores in single/alternating mode assigned to the person, and shared chores where the person is in the list.
   fields:
     person:
-      description: The name of the person to get chores for.
-      example: "John"
+      description: The entity_id of the person entity to get chores for.
+      example: "person.john"
       required: true
+      selector:
+        entity:
+          domain: person

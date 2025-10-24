@@ -124,9 +124,10 @@ def general_schema_definition(
         ): selector.SelectSelector(
             selector.SelectSelectorConfig(options=const.ALLOCATION_MODE_OPTIONS)
         ),
-        optional(const.CONF_PEOPLE, handler.options, ""): selector.TextSelector(
-            selector.TextSelectorConfig(
-                multiline=False,
+        optional(const.CONF_PEOPLE, handler.options, []): selector.EntitySelector(
+            selector.EntitySelectorConfig(
+                domain="person",
+                multiple=True,
             )
         ),
     }
