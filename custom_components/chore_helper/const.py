@@ -65,6 +65,9 @@ CONF_MONTHLY_PATTERN = "monthly_pattern"
 CONF_YEARLY_PATTERN = "yearly_pattern"
 CONF_WEEKLY_DAYS = "weekly_days"
 CONF_DAY_TYPE = "day_type"
+CONF_END_TYPE = "end_type"
+CONF_END_DATE = "end_date"
+CONF_END_AFTER_OCCURRENCES = "end_after_occurrences"
 
 DEFAULT_NAME = DOMAIN
 DEFAULT_FIRST_MONTH = "jan"
@@ -203,5 +206,13 @@ DAY_TYPE_OPTIONS = [
     selector.SelectOptionDict(value="sunday", label="Sunday"),
 ]
 
+# End type options (for range of recurrence)
+END_TYPE_OPTIONS = [
+    selector.SelectOptionDict(value="no_end", label="No end date"),
+    selector.SelectOptionDict(value="end_by_date", label="End by"),
+    selector.SelectOptionDict(value="end_after_occurrences", label="End after X occurrences"),
+]
+
 DEFAULT_ALLOCATION_MODE = "none"
 DEFAULT_RECURRENCE_TYPE = "daily"
+DEFAULT_END_TYPE = "no_end"

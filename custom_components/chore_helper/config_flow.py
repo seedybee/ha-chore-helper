@@ -86,6 +86,24 @@ async def _validate_config(
     if const.CONF_CHORE_DAY in data and data[const.CONF_CHORE_DAY] == "0":
         data[const.CONF_CHORE_DAY] = None
 
+    # Validate range of recurrence
+    end_type = data.get(const.CONF_END_TYPE, const.DEFAULT_END_TYPE)
+
+    if end_type == "end_by_date":
+        if not data.get(const.CONF_END_DATE):
+            raise SchemaFlowError("end_date_required")
+        # Clear the other end option
+        data[const.CONF_END_AFTER_OCCURRENCES] = None
+    elif end_type == "end_after_occurrences":
+        if not data.get(const.CONF_END_AFTER_OCCURRENCES):
+            raise SchemaFlowError("end_after_occurrences_required")
+        # Clear the other end option
+        data[const.CONF_END_DATE] = None
+    else:  # no_end
+        # Clear both end options
+        data[const.CONF_END_DATE] = None
+        data[const.CONF_END_AFTER_OCCURRENCES] = None
+
     # Auto-determine allocation mode based on people selection
     people = data.get(const.CONF_PEOPLE, [])
     people_count = len(people) if people else 0
@@ -235,9 +253,34 @@ async def combined_config_schema(
         )
     )
 
+    # ========== SUBSECTION: RANGE OF RECURRENCE ==========
     # Start date
     schema[optional(const.CONF_START_DATE, options, helpers.now().date())] = (
         selector.DateSelector()
+    )
+
+    # End type selector
+    schema[optional(const.CONF_END_TYPE, options, const.DEFAULT_END_TYPE)] = (
+        selector.SelectSelector(
+            selector.SelectSelectorConfig(options=const.END_TYPE_OPTIONS)
+        )
+    )
+
+    # End date (when end_type is "end_by_date")
+    schema[optional(const.CONF_END_DATE, options)] = (
+        selector.DateSelector()
+    )
+
+    # End after X occurrences (when end_type is "end_after_occurrences")
+    schema[optional(const.CONF_END_AFTER_OCCURRENCES, options)] = (
+        selector.NumberSelector(
+            selector.NumberSelectorConfig(
+                min=1,
+                max=1000,
+                mode=selector.NumberSelectorMode.BOX,
+                unit_of_measurement="occurrences",
+            )
+        )
     )
 
     # First/Last month (for seasonal chores)
