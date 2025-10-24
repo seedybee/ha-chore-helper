@@ -25,6 +25,42 @@ async def _validate_config(
     _: SchemaConfigFlowHandler | SchemaOptionsFlowHandler, data: Any
 ) -> Any:
     """Validate config."""
+    # Map new pattern-based recurrence to legacy frequency (if using new system)
+    if const.CONF_RECURRENCE_TYPE in data:
+        recurrence_type = data[const.CONF_RECURRENCE_TYPE]
+
+        if recurrence_type == "daily":
+            pattern = data.get(const.CONF_DAILY_PATTERN, "every_n_days")
+            if pattern == "every_n_days":
+                data[const.CONF_FREQUENCY] = "every-n-days"
+            elif pattern == "every_weekday":
+                data[const.CONF_FREQUENCY] = "every-n-days"
+                data[const.CONF_PERIOD] = 1  # Every 1 day, but only weekdays
+                # TODO: Need backend support for weekday filtering
+            elif pattern == "regenerate_days":
+                data[const.CONF_FREQUENCY] = "after-n-days"
+
+        elif recurrence_type == "weekly":
+            pattern = data.get(const.CONF_WEEKLY_PATTERN, "recur_weekly")
+            if pattern == "recur_weekly":
+                data[const.CONF_FREQUENCY] = "every-n-weeks"
+            elif pattern == "regenerate_weeks":
+                data[const.CONF_FREQUENCY] = "after-n-weeks"
+
+        elif recurrence_type == "monthly":
+            pattern = data.get(const.CONF_MONTHLY_PATTERN, "day_of_month")
+            if pattern in ["day_of_month", "nth_day_type"]:
+                data[const.CONF_FREQUENCY] = "every-n-months"
+            elif pattern == "regenerate_months":
+                data[const.CONF_FREQUENCY] = "after-n-months"
+
+        elif recurrence_type == "yearly":
+            pattern = data.get(const.CONF_YEARLY_PATTERN, "month_day")
+            if pattern in ["month_day", "nth_day_type_of_month"]:
+                data[const.CONF_FREQUENCY] = "every-n-years"
+            elif pattern == "regenerate_years":
+                data[const.CONF_FREQUENCY] = "after-n-years"
+
     if const.CONF_DAY_OF_MONTH in data and data[const.CONF_DAY_OF_MONTH] < 1:
         data[const.CONF_DAY_OF_MONTH] = None
 
@@ -120,9 +156,71 @@ async def combined_config_schema(
     )
 
     # ========== SECTION: CHORE RECURRENCE ==========
-    schema[required(const.CONF_FREQUENCY, options, const.DEFAULT_FREQUENCY)] = (
+    # Legacy frequency field (for backward compatibility)
+    schema[optional(const.CONF_FREQUENCY, options, const.DEFAULT_FREQUENCY)] = (
         selector.SelectSelector(
             selector.SelectSelectorConfig(options=const.FREQUENCY_OPTIONS)
+        )
+    )
+
+    # New pattern-based recurrence
+    schema[optional(const.CONF_RECURRENCE_TYPE, options, const.DEFAULT_RECURRENCE_TYPE)] = (
+        selector.SelectSelector(
+            selector.SelectSelectorConfig(options=const.RECURRENCE_TYPE_OPTIONS)
+        )
+    )
+
+    # Daily pattern
+    schema[optional(const.CONF_DAILY_PATTERN, options, "every_n_days")] = (
+        selector.SelectSelector(
+            selector.SelectSelectorConfig(options=const.DAILY_PATTERN_OPTIONS)
+        )
+    )
+
+    # Weekly pattern
+    schema[optional(const.CONF_WEEKLY_PATTERN, options, "recur_weekly")] = (
+        selector.SelectSelector(
+            selector.SelectSelectorConfig(options=const.WEEKLY_PATTERN_OPTIONS)
+        )
+    )
+
+    # Weekly days (checkbox for multiple selection)
+    schema[optional(const.CONF_WEEKLY_DAYS, options, [])] = (
+        selector.SelectSelector(
+            selector.SelectSelectorConfig(
+                options=[
+                    selector.SelectOptionDict(value="mon", label="Monday"),
+                    selector.SelectOptionDict(value="tue", label="Tuesday"),
+                    selector.SelectOptionDict(value="wed", label="Wednesday"),
+                    selector.SelectOptionDict(value="thu", label="Thursday"),
+                    selector.SelectOptionDict(value="fri", label="Friday"),
+                    selector.SelectOptionDict(value="sat", label="Saturday"),
+                    selector.SelectOptionDict(value="sun", label="Sunday"),
+                ],
+                multiple=True,
+                mode=selector.SelectSelectorMode.LIST,
+            )
+        )
+    )
+
+    # Monthly pattern
+    schema[optional(const.CONF_MONTHLY_PATTERN, options, "day_of_month")] = (
+        selector.SelectSelector(
+            selector.SelectSelectorConfig(options=const.MONTHLY_PATTERN_OPTIONS)
+        )
+    )
+
+    # Yearly pattern
+    schema[optional(const.CONF_YEARLY_PATTERN, options, "month_day")] = (
+        selector.SelectSelector(
+            selector.SelectSelectorConfig(options=const.YEARLY_PATTERN_OPTIONS)
+        )
+    )
+
+    # Day type (for nth patterns)
+    schema[optional(const.CONF_DAY_TYPE, options, "day")] = (
+        selector.SelectSelector(
+            selector.SelectSelectorConfig(options=const.DAY_TYPE_OPTIONS)
         )
     )
 
@@ -154,7 +252,7 @@ async def combined_config_schema(
         )
     )
 
-    # Weekly specific: day of week and first week
+    # Legacy fields (kept for backward compatibility)
     schema[optional(const.CONF_CHORE_DAY, options)] = (
         selector.SelectSelector(
             selector.SelectSelectorConfig(options=const.WEEKDAY_OPTIONS)
@@ -170,8 +268,6 @@ async def combined_config_schema(
             )
         )
     )
-
-    # Monthly specific: day of month, weekday order, etc.
     schema[optional(const.CONF_DAY_OF_MONTH, options)] = (
         selector.NumberSelector(
             selector.NumberSelectorConfig(
@@ -202,8 +298,6 @@ async def combined_config_schema(
             )
         )
     )
-
-    # Yearly specific: date (MM/DD)
     schema[optional(const.CONF_DATE, options)] = selector.TextSelector()
 
     # ========== SECTION: ALLOCATION ==========
