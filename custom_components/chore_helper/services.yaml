@@ -1,5 +1,5 @@
 complete:
-  description: Set the last_completed attribute to the current date and time.
+  description: Set the last_completed attribute to the current date and time. For chores with alternating person allocation, this will automatically rotate to the next person in the list.
   target:
     entity:
       integration: chore_helper
@@ -63,3 +63,10 @@ update_state:
     entity_id:
       description: The chore sensor entity_id.
       example: sensor.sweep_floor
+get_chores_by_person:
+  description: Get all chores assigned to a specific person or shared with everyone. Returns chores in single/alternating mode assigned to the person, and all shared chores.
+  fields:
+    person:
+      description: The name of the person to get chores for.
+      example: "John"
+      required: true
