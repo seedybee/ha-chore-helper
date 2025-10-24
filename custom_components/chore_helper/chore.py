@@ -82,10 +82,20 @@ class Chore(RestoreEntity):
         self._last_month: int = (
             months.index(last_month) + 1 if last_month in months else 12
         )
-        self._icon_normal = config.get(const.CONF_ICON_NORMAL)
-        self._icon_today = config.get(const.CONF_ICON_TODAY)
-        self._icon_tomorrow = config.get(const.CONF_ICON_TOMORROW)
-        self._icon_overdue = config.get(const.CONF_ICON_OVERDUE)
+        # Support both single icon (new) and 4 icons (legacy)
+        single_icon = config.get(const.CONF_ICON)
+        if single_icon:
+            # Use single icon for all states (simplified UI)
+            self._icon_normal = single_icon
+            self._icon_today = single_icon
+            self._icon_tomorrow = single_icon
+            self._icon_overdue = single_icon
+        else:
+            # Fall back to 4 separate icons (backward compatibility)
+            self._icon_normal = config.get(const.CONF_ICON_NORMAL)
+            self._icon_today = config.get(const.CONF_ICON_TODAY)
+            self._icon_tomorrow = config.get(const.CONF_ICON_TOMORROW)
+            self._icon_overdue = config.get(const.CONF_ICON_OVERDUE)
         self._date_format = config.get(
             const.CONF_DATE_FORMAT, const.DEFAULT_DATE_FORMAT
         )

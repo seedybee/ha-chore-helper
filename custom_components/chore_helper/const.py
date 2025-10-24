@@ -36,6 +36,7 @@ CONF_FORECAST_DATES = "forecast_dates"
 CONF_SHOW_OVERDUE_TODAY = "show_overdue_today"
 CONF_FREQUENCY = "frequency"
 CONF_MANUAL = "manual_update"
+CONF_ICON = "icon"  # Single icon for simplified UI
 CONF_ICON_NORMAL = "icon_normal"
 CONF_ICON_TODAY = "icon_today"
 CONF_ICON_TOMORROW = "icon_tomorrow"
@@ -83,6 +84,7 @@ DEFAULT_ICON_NORMAL = "mdi:broom"
 DEFAULT_ICON_TODAY = "mdi:bell"
 DEFAULT_ICON_TOMORROW = "mdi:bell-outline"
 DEFAULT_ICON_OVERDUE = "mdi:bell-alert"
+DEFAULT_ICON = "mdi:broom"  # Single icon for simplified UI
 ICON = DEFAULT_ICON_NORMAL
 
 STATE_TODAY = "today"
@@ -146,15 +148,15 @@ ORDER_OPTIONS = [
 ]
 
 ALLOCATION_MODE_OPTIONS = [
-    selector.SelectOptionDict(value="none", label="None (No person allocation)"),
+    selector.SelectOptionDict(value="none", label="None"),
     selector.SelectOptionDict(value="single", label="Single person"),
-    selector.SelectOptionDict(value="alternating", label="Alternating (rotate on completion)"),
-    selector.SelectOptionDict(value="shared", label="Shared (all people)"),
+    selector.SelectOptionDict(value="alternating", label="Alternating"),
+    selector.SelectOptionDict(value="shared", label="Shared"),
 ]
 
 MULTIPLE_PEOPLE_MODE_OPTIONS = [
     selector.SelectOptionDict(value="alternating", label="Alternating (rotate on completion)"),
-    selector.SelectOptionDict(value="shared", label="Shared (appears for all selected people)"),
+    selector.SelectOptionDict(value="shared", label="Shared (all selected people)"),
 ]
 
 # Recurrence type options
@@ -167,29 +169,29 @@ RECURRENCE_TYPE_OPTIONS = [
 
 # Daily pattern options
 DAILY_PATTERN_OPTIONS = [
-    selector.SelectOptionDict(value="every_n_days", label="Every X day(s)"),
+    selector.SelectOptionDict(value="every_n_days", label="Every X days"),
     selector.SelectOptionDict(value="every_weekday", label="Every weekday"),
-    selector.SelectOptionDict(value="regenerate_days", label="Regenerate every X day(s) after completion"),
+    selector.SelectOptionDict(value="regenerate_days", label="X days after completion"),
 ]
 
 # Weekly pattern options
 WEEKLY_PATTERN_OPTIONS = [
-    selector.SelectOptionDict(value="recur_weekly", label="Recur every X week(s) on selected days"),
-    selector.SelectOptionDict(value="regenerate_weeks", label="Regenerate every X week(s) after completion"),
+    selector.SelectOptionDict(value="recur_weekly", label="Every X weeks on:"),
+    selector.SelectOptionDict(value="regenerate_weeks", label="X weeks after completion"),
 ]
 
 # Monthly pattern options
 MONTHLY_PATTERN_OPTIONS = [
-    selector.SelectOptionDict(value="day_of_month", label="Day X of every X month(s)"),
-    selector.SelectOptionDict(value="nth_day_type", label="The Xth [day type] of every X month(s)"),
-    selector.SelectOptionDict(value="regenerate_months", label="Regenerate every X month(s) after completion"),
+    selector.SelectOptionDict(value="day_of_month", label="Day X of every X months"),
+    selector.SelectOptionDict(value="nth_day_type", label="The Xth [day] of every X months"),
+    selector.SelectOptionDict(value="regenerate_months", label="X months after completion"),
 ]
 
 # Yearly pattern options
 YEARLY_PATTERN_OPTIONS = [
     selector.SelectOptionDict(value="month_day", label="Every [month] [day]"),
-    selector.SelectOptionDict(value="nth_day_type_of_month", label="The Xth [day type] of [month]"),
-    selector.SelectOptionDict(value="regenerate_years", label="Regenerate every X year(s) after completion"),
+    selector.SelectOptionDict(value="nth_day_type_of_month", label="The Xth [day] of [month]"),
+    selector.SelectOptionDict(value="regenerate_years", label="X years after completion"),
 ]
 
 # Day type options (for monthly/yearly nth patterns)
