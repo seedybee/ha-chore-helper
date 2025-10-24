@@ -1,5 +1,77 @@
 {
   "config": {
+    "step": {
+      "user": {
+        "title": "Configure Chore",
+        "menu_options": {
+          "details": "Chore Details",
+          "recurrence": "Recurrence Pattern",
+          "range": "Range of Recurrence",
+          "allocation": "Person Allocation",
+          "advanced": "Advanced Options"
+        }
+      },
+      "details": {
+        "title": "Chore Details",
+        "description": "Set the name and icon for this chore."
+      },
+      "recurrence": {
+        "title": "Recurrence Pattern",
+        "description": "Configure how often this chore repeats."
+      },
+      "range": {
+        "title": "Range of Recurrence",
+        "description": "Set when this chore starts and ends."
+      },
+      "allocation": {
+        "title": "Person Allocation",
+        "description": "Assign this chore to people."
+      },
+      "advanced": {
+        "title": "Advanced Options",
+        "description": "Configure advanced settings."
+      }
+    },
+    "error": {
+      "multiple_people_mode_required": "When multiple people are selected, you must choose either 'Alternating' or 'Shared' mode.",
+      "month_day": "Invalid date format. Use MM/DD format.",
+      "end_date_required": "When 'End by' is selected, you must specify an end date.",
+      "end_after_occurrences_required": "When 'End after X occurrences' is selected, you must specify the number of occurrences."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Configure Chore",
+        "menu_options": {
+          "details": "Chore Details",
+          "recurrence": "Recurrence Pattern",
+          "range": "Range of Recurrence",
+          "allocation": "Person Allocation",
+          "advanced": "Advanced Options"
+        }
+      },
+      "details": {
+        "title": "Chore Details",
+        "description": "Set the name and icon for this chore."
+      },
+      "recurrence": {
+        "title": "Recurrence Pattern",
+        "description": "Configure how often this chore repeats."
+      },
+      "range": {
+        "title": "Range of Recurrence",
+        "description": "Set when this chore starts and ends."
+      },
+      "allocation": {
+        "title": "Person Allocation",
+        "description": "Assign this chore to people."
+      },
+      "advanced": {
+        "title": "Advanced Options",
+        "description": "Configure advanced settings."
+      }
+    },
     "error": {
       "multiple_people_mode_required": "When multiple people are selected, you must choose either 'Alternating' or 'Shared' mode.",
       "month_day": "Invalid date format. Use MM/DD format.",

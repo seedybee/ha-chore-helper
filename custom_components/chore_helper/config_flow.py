@@ -150,83 +150,95 @@ def optional(
     return vol.Optional(key, description={"suggested_value": suggested_value})
 
 
-async def combined_config_schema(
+async def step_details_schema(
     handler: SchemaConfigFlowHandler | SchemaOptionsFlowHandler,
 ) -> vol.Schema:
-    """Generate combined single-page config schema."""
+    """Step 1: Chore Details - Name and Icon."""
     schema = {}
     options = handler.options if hasattr(handler, 'options') else {}
 
-    # ========== CHORE DETAILS ==========
     schema[required(CONF_NAME, options)] = selector.TextSelector()
-
-    # Single icon for all states
     schema[optional(const.CONF_ICON, options, const.DEFAULT_ICON)] = (
         selector.IconSelector()
     )
 
-    # ========== RECURRENCE PATTERN ==========
+    return vol.Schema(schema)
+
+
+async def step_recurrence_schema(
+    handler: SchemaConfigFlowHandler | SchemaOptionsFlowHandler,
+) -> vol.Schema:
+    """Step 2: Recurrence Pattern - Show only relevant fields based on type."""
+    schema = {}
+    options = handler.options if hasattr(handler, 'options') else {}
+
+    # Recurrence type selector
     schema[optional(const.CONF_RECURRENCE_TYPE, options, const.DEFAULT_RECURRENCE_TYPE)] = (
         selector.SelectSelector(
             selector.SelectSelectorConfig(options=const.RECURRENCE_TYPE_OPTIONS)
         )
     )
 
-    # Daily pattern
-    schema[optional(const.CONF_DAILY_PATTERN, options, "every_n_days")] = (
-        selector.SelectSelector(
-            selector.SelectSelectorConfig(options=const.DAILY_PATTERN_OPTIONS)
-        )
-    )
+    # Get current recurrence type
+    recurrence_type = options.get(const.CONF_RECURRENCE_TYPE, const.DEFAULT_RECURRENCE_TYPE)
 
-    # Weekly pattern
-    schema[optional(const.CONF_WEEKLY_PATTERN, options, "recur_weekly")] = (
-        selector.SelectSelector(
-            selector.SelectSelectorConfig(options=const.WEEKLY_PATTERN_OPTIONS)
-        )
-    )
-
-    # Weekly days (checkbox for multiple selection)
-    schema[optional(const.CONF_WEEKLY_DAYS, options, [])] = (
-        selector.SelectSelector(
-            selector.SelectSelectorConfig(
-                options=[
-                    selector.SelectOptionDict(value="mon", label="Monday"),
-                    selector.SelectOptionDict(value="tue", label="Tuesday"),
-                    selector.SelectOptionDict(value="wed", label="Wednesday"),
-                    selector.SelectOptionDict(value="thu", label="Thursday"),
-                    selector.SelectOptionDict(value="fri", label="Friday"),
-                    selector.SelectOptionDict(value="sat", label="Saturday"),
-                    selector.SelectOptionDict(value="sun", label="Sunday"),
-                ],
-                multiple=True,
-                mode=selector.SelectSelectorMode.LIST,
+    # Show pattern fields based on recurrence type
+    if recurrence_type == "daily":
+        schema[optional(const.CONF_DAILY_PATTERN, options, "every_n_days")] = (
+            selector.SelectSelector(
+                selector.SelectSelectorConfig(options=const.DAILY_PATTERN_OPTIONS)
             )
         )
-    )
 
-    # Monthly pattern
-    schema[optional(const.CONF_MONTHLY_PATTERN, options, "day_of_month")] = (
-        selector.SelectSelector(
-            selector.SelectSelectorConfig(options=const.MONTHLY_PATTERN_OPTIONS)
+    elif recurrence_type == "weekly":
+        schema[optional(const.CONF_WEEKLY_PATTERN, options, "recur_weekly")] = (
+            selector.SelectSelector(
+                selector.SelectSelectorConfig(options=const.WEEKLY_PATTERN_OPTIONS)
+            )
         )
-    )
-
-    # Yearly pattern
-    schema[optional(const.CONF_YEARLY_PATTERN, options, "month_day")] = (
-        selector.SelectSelector(
-            selector.SelectSelectorConfig(options=const.YEARLY_PATTERN_OPTIONS)
+        schema[optional(const.CONF_WEEKLY_DAYS, options, [])] = (
+            selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=[
+                        selector.SelectOptionDict(value="mon", label="Monday"),
+                        selector.SelectOptionDict(value="tue", label="Tuesday"),
+                        selector.SelectOptionDict(value="wed", label="Wednesday"),
+                        selector.SelectOptionDict(value="thu", label="Thursday"),
+                        selector.SelectOptionDict(value="fri", label="Friday"),
+                        selector.SelectOptionDict(value="sat", label="Saturday"),
+                        selector.SelectOptionDict(value="sun", label="Sunday"),
+                    ],
+                    multiple=True,
+                    mode=selector.SelectSelectorMode.LIST,
+                )
+            )
         )
-    )
 
-    # Day type (for nth patterns)
-    schema[optional(const.CONF_DAY_TYPE, options, "day")] = (
-        selector.SelectSelector(
-            selector.SelectSelectorConfig(options=const.DAY_TYPE_OPTIONS)
+    elif recurrence_type == "monthly":
+        schema[optional(const.CONF_MONTHLY_PATTERN, options, "day_of_month")] = (
+            selector.SelectSelector(
+                selector.SelectSelectorConfig(options=const.MONTHLY_PATTERN_OPTIONS)
+            )
         )
-    )
+        schema[optional(const.CONF_DAY_TYPE, options, "day")] = (
+            selector.SelectSelector(
+                selector.SelectSelectorConfig(options=const.DAY_TYPE_OPTIONS)
+            )
+        )
 
-    # Period (for all non-blank frequencies)
+    elif recurrence_type == "yearly":
+        schema[optional(const.CONF_YEARLY_PATTERN, options, "month_day")] = (
+            selector.SelectSelector(
+                selector.SelectSelectorConfig(options=const.YEARLY_PATTERN_OPTIONS)
+            )
+        )
+        schema[optional(const.CONF_DAY_TYPE, options, "day")] = (
+            selector.SelectSelector(
+                selector.SelectSelectorConfig(options=const.DAY_TYPE_OPTIONS)
+            )
+        )
+
+    # Period for all types
     schema[optional(const.CONF_PERIOD, options, const.DEFAULT_PERIOD)] = (
         selector.NumberSelector(
             selector.NumberSelectorConfig(
@@ -237,35 +249,49 @@ async def combined_config_schema(
         )
     )
 
-    # ========== RANGE OF RECURRENCE ==========
+    return vol.Schema(schema)
+
+
+async def step_range_schema(
+    handler: SchemaConfigFlowHandler | SchemaOptionsFlowHandler,
+) -> vol.Schema:
+    """Step 3: Range of Recurrence - Start/End dates."""
+    schema = {}
+    options = handler.options if hasattr(handler, 'options') else {}
+
+    # Start date
     schema[optional(const.CONF_START_DATE, options, helpers.now().date())] = (
         selector.DateSelector()
     )
 
+    # End type selector
     schema[optional(const.CONF_END_TYPE, options, const.DEFAULT_END_TYPE)] = (
         selector.SelectSelector(
             selector.SelectSelectorConfig(options=const.END_TYPE_OPTIONS)
         )
     )
 
-    # End date (when end_type is "end_by_date")
-    schema[optional(const.CONF_END_DATE, options)] = (
-        selector.DateSelector()
-    )
+    # Get current end type
+    end_type = options.get(const.CONF_END_TYPE, const.DEFAULT_END_TYPE)
 
-    # End after X occurrences (when end_type is "end_after_occurrences")
-    schema[optional(const.CONF_END_AFTER_OCCURRENCES, options)] = (
-        selector.NumberSelector(
-            selector.NumberSelectorConfig(
-                min=1,
-                max=1000,
-                mode=selector.NumberSelectorMode.BOX,
-                unit_of_measurement="occurrences",
+    # Show only relevant end field
+    if end_type == "end_by_date":
+        schema[optional(const.CONF_END_DATE, options)] = (
+            selector.DateSelector()
+        )
+    elif end_type == "end_after_occurrences":
+        schema[optional(const.CONF_END_AFTER_OCCURRENCES, options)] = (
+            selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    min=1,
+                    max=1000,
+                    mode=selector.NumberSelectorMode.BOX,
+                    unit_of_measurement="occurrences",
+                )
             )
         )
-    )
 
-    # First/Last month (for seasonal chores)
+    # Seasonal chores - first/last month
     schema[optional(const.CONF_FIRST_MONTH, options, const.DEFAULT_FIRST_MONTH)] = (
         selector.SelectSelector(
             selector.SelectSelectorConfig(options=const.MONTH_OPTIONS)
@@ -277,7 +303,17 @@ async def combined_config_schema(
         )
     )
 
-    # ========== PERSON ALLOCATION ==========
+    return vol.Schema(schema)
+
+
+async def step_allocation_schema(
+    handler: SchemaConfigFlowHandler | SchemaOptionsFlowHandler,
+) -> vol.Schema:
+    """Step 4: Person Allocation - Assign to people."""
+    schema = {}
+    options = handler.options if hasattr(handler, 'options') else {}
+
+    # People selector
     schema[optional(const.CONF_PEOPLE, options, [])] = (
         selector.EntitySelector(
             selector.EntitySelectorConfig(
@@ -287,22 +323,35 @@ async def combined_config_schema(
         )
     )
 
-    # Add multiple people mode selector
-    current_allocation_mode = options.get(const.CONF_ALLOCATION_MODE)
-    if current_allocation_mode in ["alternating", "shared"]:
-        schema[optional(const.CONF_MULTIPLE_PEOPLE_MODE, options, current_allocation_mode)] = (
-            selector.SelectSelector(
-                selector.SelectSelectorConfig(options=const.MULTIPLE_PEOPLE_MODE_OPTIONS)
-            )
-        )
-    else:
-        schema[optional(const.CONF_MULTIPLE_PEOPLE_MODE, options)] = (
-            selector.SelectSelector(
-                selector.SelectSelectorConfig(options=const.MULTIPLE_PEOPLE_MODE_OPTIONS)
-            )
-        )
+    # Only show mode selector if multiple people
+    people = options.get(const.CONF_PEOPLE, [])
+    people_count = len(people) if people else 0
 
-    # ========== ADVANCED OPTIONS ==========
+    if people_count > 1:
+        current_allocation_mode = options.get(const.CONF_ALLOCATION_MODE)
+        if current_allocation_mode in ["alternating", "shared"]:
+            schema[optional(const.CONF_MULTIPLE_PEOPLE_MODE, options, current_allocation_mode)] = (
+                selector.SelectSelector(
+                    selector.SelectSelectorConfig(options=const.MULTIPLE_PEOPLE_MODE_OPTIONS)
+                )
+            )
+        else:
+            schema[optional(const.CONF_MULTIPLE_PEOPLE_MODE, options)] = (
+                selector.SelectSelector(
+                    selector.SelectSelectorConfig(options=const.MULTIPLE_PEOPLE_MODE_OPTIONS)
+                )
+            )
+
+    return vol.Schema(schema)
+
+
+async def step_advanced_schema(
+    handler: SchemaConfigFlowHandler | SchemaOptionsFlowHandler,
+) -> vol.Schema:
+    """Step 5: Advanced Options."""
+    schema = {}
+    options = handler.options if hasattr(handler, 'options') else {}
+
     schema[optional(const.CONF_FORECAST_DATES, options, const.DEFAULT_FORECAST_DATES)] = (
         selector.NumberSelector(
             selector.NumberSelectorConfig(
@@ -321,10 +370,20 @@ async def combined_config_schema(
 
 
 CONFIG_FLOW: dict[str, SchemaFlowFormStep | SchemaFlowMenuStep] = {
-    "user": SchemaFlowFormStep(combined_config_schema, validate_user_input=_validate_config),
+    "user": SchemaFlowMenuStep(["details", "recurrence", "range", "allocation", "advanced"]),
+    "details": SchemaFlowFormStep(step_details_schema),
+    "recurrence": SchemaFlowFormStep(step_recurrence_schema),
+    "range": SchemaFlowFormStep(step_range_schema),
+    "allocation": SchemaFlowFormStep(step_allocation_schema),
+    "advanced": SchemaFlowFormStep(step_advanced_schema, validate_user_input=_validate_config),
 }
 OPTIONS_FLOW: dict[str, SchemaFlowFormStep | SchemaFlowMenuStep] = {
-    "init": SchemaFlowFormStep(combined_config_schema, validate_user_input=_validate_config),
+    "init": SchemaFlowMenuStep(["details", "recurrence", "range", "allocation", "advanced"]),
+    "details": SchemaFlowFormStep(step_details_schema),
+    "recurrence": SchemaFlowFormStep(step_recurrence_schema),
+    "range": SchemaFlowFormStep(step_range_schema),
+    "allocation": SchemaFlowFormStep(step_allocation_schema),
+    "advanced": SchemaFlowFormStep(step_advanced_schema, validate_user_input=_validate_config),
 }
 
 
