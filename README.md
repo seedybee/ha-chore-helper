@@ -11,6 +11,7 @@
 [![Discord][discord-shield]][discord]
 [![Community Forum][forum-shield]][forum]
 
+Forked from VolantisDev/ha-chore-helper to include a person selector for specific chores.
 This component allows you to set up and manage all of your recurring household chores
 in a flexible way using Home Assistant helpers.
 
