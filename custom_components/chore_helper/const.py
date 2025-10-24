@@ -58,6 +58,16 @@ CONF_DATE_FORMAT = "date_format"
 CONF_ALLOCATION_MODE = "allocation_mode"
 CONF_PEOPLE = "people"
 CONF_MULTIPLE_PEOPLE_MODE = "multiple_people_mode"
+CONF_RECURRENCE_TYPE = "recurrence_type"
+CONF_DAILY_PATTERN = "daily_pattern"
+CONF_WEEKLY_PATTERN = "weekly_pattern"
+CONF_MONTHLY_PATTERN = "monthly_pattern"
+CONF_YEARLY_PATTERN = "yearly_pattern"
+CONF_WEEKLY_DAYS = "weekly_days"
+CONF_DAY_TYPE = "day_type"
+CONF_END_TYPE = "end_type"
+CONF_END_DATE = "end_date"
+CONF_END_AFTER_OCCURRENCES = "end_after_occurrences"
 
 DEFAULT_NAME = DOMAIN
 DEFAULT_FIRST_MONTH = "jan"
@@ -147,4 +157,62 @@ MULTIPLE_PEOPLE_MODE_OPTIONS = [
     selector.SelectOptionDict(value="shared", label="Shared (appears for all selected people)"),
 ]
 
+# Recurrence type options
+RECURRENCE_TYPE_OPTIONS = [
+    selector.SelectOptionDict(value="daily", label="Daily"),
+    selector.SelectOptionDict(value="weekly", label="Weekly"),
+    selector.SelectOptionDict(value="monthly", label="Monthly"),
+    selector.SelectOptionDict(value="yearly", label="Yearly"),
+]
+
+# Daily pattern options
+DAILY_PATTERN_OPTIONS = [
+    selector.SelectOptionDict(value="every_n_days", label="Every X day(s)"),
+    selector.SelectOptionDict(value="every_weekday", label="Every weekday"),
+    selector.SelectOptionDict(value="regenerate_days", label="Regenerate every X day(s) after completion"),
+]
+
+# Weekly pattern options
+WEEKLY_PATTERN_OPTIONS = [
+    selector.SelectOptionDict(value="recur_weekly", label="Recur every X week(s) on selected days"),
+    selector.SelectOptionDict(value="regenerate_weeks", label="Regenerate every X week(s) after completion"),
+]
+
+# Monthly pattern options
+MONTHLY_PATTERN_OPTIONS = [
+    selector.SelectOptionDict(value="day_of_month", label="Day X of every X month(s)"),
+    selector.SelectOptionDict(value="nth_day_type", label="The Xth [day type] of every X month(s)"),
+    selector.SelectOptionDict(value="regenerate_months", label="Regenerate every X month(s) after completion"),
+]
+
+# Yearly pattern options
+YEARLY_PATTERN_OPTIONS = [
+    selector.SelectOptionDict(value="month_day", label="Every [month] [day]"),
+    selector.SelectOptionDict(value="nth_day_type_of_month", label="The Xth [day type] of [month]"),
+    selector.SelectOptionDict(value="regenerate_years", label="Regenerate every X year(s) after completion"),
+]
+
+# Day type options (for monthly/yearly nth patterns)
+DAY_TYPE_OPTIONS = [
+    selector.SelectOptionDict(value="day", label="Day"),
+    selector.SelectOptionDict(value="weekday", label="Weekday"),
+    selector.SelectOptionDict(value="weekend_day", label="Weekend day"),
+    selector.SelectOptionDict(value="monday", label="Monday"),
+    selector.SelectOptionDict(value="tuesday", label="Tuesday"),
+    selector.SelectOptionDict(value="wednesday", label="Wednesday"),
+    selector.SelectOptionDict(value="thursday", label="Thursday"),
+    selector.SelectOptionDict(value="friday", label="Friday"),
+    selector.SelectOptionDict(value="saturday", label="Saturday"),
+    selector.SelectOptionDict(value="sunday", label="Sunday"),
+]
+
+# End type options (for range of recurrence)
+END_TYPE_OPTIONS = [
+    selector.SelectOptionDict(value="no_end", label="No end date"),
+    selector.SelectOptionDict(value="end_by_date", label="End by"),
+    selector.SelectOptionDict(value="end_after_occurrences", label="End after X occurrences"),
+]
+
 DEFAULT_ALLOCATION_MODE = "none"
+DEFAULT_RECURRENCE_TYPE = "daily"
+DEFAULT_END_TYPE = "no_end"

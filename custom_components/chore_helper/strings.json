@@ -2,7 +2,9 @@
   "config": {
     "error": {
       "multiple_people_mode_required": "When multiple people are selected, you must choose either 'Alternating' or 'Shared' mode.",
-      "month_day": "Invalid date format. Use MM/DD format."
+      "month_day": "Invalid date format. Use MM/DD format.",
+      "end_date_required": "When 'End by' is selected, you must specify an end date.",
+      "end_after_occurrences_required": "When 'End after X occurrences' is selected, you must specify the number of occurrences."
     }
   }
 }

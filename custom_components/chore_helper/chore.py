@@ -53,6 +53,10 @@ class Chore(RestoreEntity):
         "_allocation_mode",
         "_people",
         "_assigned_to",
+        "_end_type",
+        "_end_date",
+        "_end_after_occurrences",
+        "_occurrence_count",
         "show_overdue_today",
         "config_entry",
         "last_completed",
@@ -119,6 +123,15 @@ class Chore(RestoreEntity):
         except ValueError:
             self._start_date = None
 
+        # Range of recurrence
+        self._end_type: str = config.get(const.CONF_END_TYPE, const.DEFAULT_END_TYPE)
+        try:
+            self._end_date = helpers.to_date(config.get(const.CONF_END_DATE)) if config.get(const.CONF_END_DATE) else None
+        except ValueError:
+            self._end_date = None
+        self._end_after_occurrences: int | None = config.get(const.CONF_END_AFTER_OCCURRENCES)
+        self._occurrence_count: int = 0  # Track how many times this chore has been completed
+
     async def async_added_to_hass(self) -> None:
         """When sensor is added to HA, restore state and add it to calendar."""
         await super().async_added_to_hass()
@@ -148,6 +161,7 @@ class Chore(RestoreEntity):
             self._add_dates = state.attributes.get(const.ATTR_ADD_DATES, None)
             self._remove_dates = state.attributes.get(const.ATTR_REMOVE_DATES, None)
             self._assigned_to = state.attributes.get(const.ATTR_ASSIGNED_TO, None)
+            self._occurrence_count = state.attributes.get("occurrence_count", 0)
 
         # Initialize person assignment if not restored and allocation is enabled
         if self._assigned_to is None and self._allocation_mode in ["single", "alternating"]:
@@ -333,6 +347,10 @@ class Chore(RestoreEntity):
             const.ATTR_PEOPLE: self.people,
             const.ATTR_ASSIGNED_TO: self.assigned_to,
             const.ATTR_ASSIGNED_TO_NAME: self.assigned_to_name,
+            "end_type": self._end_type,
+            "end_date": self._end_date,
+            "end_after_occurrences": self._end_after_occurrences,
+            "occurrence_count": self._occurrence_count,
             ATTR_UNIT_OF_MEASUREMENT: self.native_unit_of_measurement,
             # Needed for translations to work
             ATTR_DEVICE_CLASS: self.DEVICE_CLASS,
