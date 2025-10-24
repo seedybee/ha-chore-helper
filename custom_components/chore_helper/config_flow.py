@@ -172,61 +172,69 @@ async def combined_config_schema(
         )
     )
 
-    # Daily pattern
-    schema[optional(const.CONF_DAILY_PATTERN, options, "every_n_days")] = (
-        selector.SelectSelector(
-            selector.SelectSelectorConfig(options=const.DAILY_PATTERN_OPTIONS)
-        )
-    )
+    # Get current recurrence type to show only relevant fields
+    recurrence_type = options.get(const.CONF_RECURRENCE_TYPE, const.DEFAULT_RECURRENCE_TYPE)
 
-    # Weekly pattern
-    schema[optional(const.CONF_WEEKLY_PATTERN, options, "recur_weekly")] = (
-        selector.SelectSelector(
-            selector.SelectSelectorConfig(options=const.WEEKLY_PATTERN_OPTIONS)
-        )
-    )
-
-    # Weekly days (checkbox for multiple selection)
-    schema[optional(const.CONF_WEEKLY_DAYS, options, [])] = (
-        selector.SelectSelector(
-            selector.SelectSelectorConfig(
-                options=[
-                    selector.SelectOptionDict(value="mon", label="Monday"),
-                    selector.SelectOptionDict(value="tue", label="Tuesday"),
-                    selector.SelectOptionDict(value="wed", label="Wednesday"),
-                    selector.SelectOptionDict(value="thu", label="Thursday"),
-                    selector.SelectOptionDict(value="fri", label="Friday"),
-                    selector.SelectOptionDict(value="sat", label="Saturday"),
-                    selector.SelectOptionDict(value="sun", label="Sunday"),
-                ],
-                multiple=True,
-                mode=selector.SelectSelectorMode.LIST,
+    # Show pattern selector based on recurrence type
+    if recurrence_type == "daily":
+        schema[optional(const.CONF_DAILY_PATTERN, options, "every_n_days")] = (
+            selector.SelectSelector(
+                selector.SelectSelectorConfig(options=const.DAILY_PATTERN_OPTIONS)
             )
         )
-    )
 
-    # Monthly pattern
-    schema[optional(const.CONF_MONTHLY_PATTERN, options, "day_of_month")] = (
-        selector.SelectSelector(
-            selector.SelectSelectorConfig(options=const.MONTHLY_PATTERN_OPTIONS)
+    elif recurrence_type == "weekly":
+        schema[optional(const.CONF_WEEKLY_PATTERN, options, "recur_weekly")] = (
+            selector.SelectSelector(
+                selector.SelectSelectorConfig(options=const.WEEKLY_PATTERN_OPTIONS)
+            )
         )
-    )
-
-    # Yearly pattern
-    schema[optional(const.CONF_YEARLY_PATTERN, options, "month_day")] = (
-        selector.SelectSelector(
-            selector.SelectSelectorConfig(options=const.YEARLY_PATTERN_OPTIONS)
+        # Weekly days (checkbox for multiple selection)
+        schema[optional(const.CONF_WEEKLY_DAYS, options, [])] = (
+            selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=[
+                        selector.SelectOptionDict(value="mon", label="Monday"),
+                        selector.SelectOptionDict(value="tue", label="Tuesday"),
+                        selector.SelectOptionDict(value="wed", label="Wednesday"),
+                        selector.SelectOptionDict(value="thu", label="Thursday"),
+                        selector.SelectOptionDict(value="fri", label="Friday"),
+                        selector.SelectOptionDict(value="sat", label="Saturday"),
+                        selector.SelectOptionDict(value="sun", label="Sunday"),
+                    ],
+                    multiple=True,
+                    mode=selector.SelectSelectorMode.LIST,
+                )
+            )
         )
-    )
 
-    # Day type (for nth patterns)
-    schema[optional(const.CONF_DAY_TYPE, options, "day")] = (
-        selector.SelectSelector(
-            selector.SelectSelectorConfig(options=const.DAY_TYPE_OPTIONS)
+    elif recurrence_type == "monthly":
+        schema[optional(const.CONF_MONTHLY_PATTERN, options, "day_of_month")] = (
+            selector.SelectSelector(
+                selector.SelectSelectorConfig(options=const.MONTHLY_PATTERN_OPTIONS)
+            )
         )
-    )
+        # Day type (for nth patterns)
+        schema[optional(const.CONF_DAY_TYPE, options, "day")] = (
+            selector.SelectSelector(
+                selector.SelectSelectorConfig(options=const.DAY_TYPE_OPTIONS)
+            )
+        )
 
-    # Period (for all non-blank frequencies)
+    elif recurrence_type == "yearly":
+        schema[optional(const.CONF_YEARLY_PATTERN, options, "month_day")] = (
+            selector.SelectSelector(
+                selector.SelectSelectorConfig(options=const.YEARLY_PATTERN_OPTIONS)
+            )
+        )
+        # Day type (for nth patterns)
+        schema[optional(const.CONF_DAY_TYPE, options, "day")] = (
+            selector.SelectSelector(
+                selector.SelectSelectorConfig(options=const.DAY_TYPE_OPTIONS)
+            )
+        )
+
+    # Period (for all recurrence types)
     schema[optional(const.CONF_PERIOD, options, const.DEFAULT_PERIOD)] = (
         selector.NumberSelector(
             selector.NumberSelectorConfig(
@@ -248,22 +256,27 @@ async def combined_config_schema(
         )
     )
 
-    # End date (when end_type is "end_by_date")
-    schema[optional(const.CONF_END_DATE, options)] = (
-        selector.DateSelector()
-    )
+    # Get current end type to show only relevant field
+    end_type = options.get(const.CONF_END_TYPE, const.DEFAULT_END_TYPE)
 
-    # End after X occurrences (when end_type is "end_after_occurrences")
-    schema[optional(const.CONF_END_AFTER_OCCURRENCES, options)] = (
-        selector.NumberSelector(
-            selector.NumberSelectorConfig(
-                min=1,
-                max=1000,
-                mode=selector.NumberSelectorMode.BOX,
-                unit_of_measurement="occurrences",
+    # Only show end_date when "end_by_date" is selected
+    if end_type == "end_by_date":
+        schema[optional(const.CONF_END_DATE, options)] = (
+            selector.DateSelector()
+        )
+
+    # Only show end_after_occurrences when "end_after_occurrences" is selected
+    elif end_type == "end_after_occurrences":
+        schema[optional(const.CONF_END_AFTER_OCCURRENCES, options)] = (
+            selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    min=1,
+                    max=1000,
+                    mode=selector.NumberSelectorMode.BOX,
+                    unit_of_measurement="occurrences",
+                )
             )
         )
-    )
 
     # First/Last month (for seasonal chores)
     schema[optional(const.CONF_FIRST_MONTH, options, const.DEFAULT_FIRST_MONTH)] = (
@@ -287,20 +300,24 @@ async def combined_config_schema(
         )
     )
 
-    # Add multiple people mode selector
-    current_allocation_mode = options.get(const.CONF_ALLOCATION_MODE)
-    if current_allocation_mode in ["alternating", "shared"]:
-        schema[optional(const.CONF_MULTIPLE_PEOPLE_MODE, options, current_allocation_mode)] = (
-            selector.SelectSelector(
-                selector.SelectSelectorConfig(options=const.MULTIPLE_PEOPLE_MODE_OPTIONS)
+    # Only show multiple people mode selector when 2+ people are selected
+    people = options.get(const.CONF_PEOPLE, [])
+    people_count = len(people) if people else 0
+
+    if people_count > 1:
+        current_allocation_mode = options.get(const.CONF_ALLOCATION_MODE)
+        if current_allocation_mode in ["alternating", "shared"]:
+            schema[optional(const.CONF_MULTIPLE_PEOPLE_MODE, options, current_allocation_mode)] = (
+                selector.SelectSelector(
+                    selector.SelectSelectorConfig(options=const.MULTIPLE_PEOPLE_MODE_OPTIONS)
+                )
             )
-        )
-    else:
-        schema[optional(const.CONF_MULTIPLE_PEOPLE_MODE, options)] = (
-            selector.SelectSelector(
-                selector.SelectSelectorConfig(options=const.MULTIPLE_PEOPLE_MODE_OPTIONS)
+        else:
+            schema[optional(const.CONF_MULTIPLE_PEOPLE_MODE, options)] = (
+                selector.SelectSelector(
+                    selector.SelectSelectorConfig(options=const.MULTIPLE_PEOPLE_MODE_OPTIONS)
+                )
             )
-        )
 
     # ========== ADVANCED OPTIONS ==========
     schema[optional(const.CONF_FORECAST_DATES, options, const.DEFAULT_FORECAST_DATES)] = (
