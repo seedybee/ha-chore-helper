@@ -157,34 +157,26 @@ async def combined_config_schema(
     schema = {}
     options = handler.options if hasattr(handler, 'options') else {}
 
-    # ========== SECTION: CHORE DETAILS ==========
+    # ========== CHORE DETAILS ==========
     schema[required(CONF_NAME, options)] = selector.TextSelector()
 
-    schema[optional(const.CONF_ICON_NORMAL, options, const.DEFAULT_ICON_NORMAL)] = (
-        selector.IconSelector()
-    )
-    schema[optional(const.CONF_ICON_TOMORROW, options, const.DEFAULT_ICON_TOMORROW)] = (
-        selector.IconSelector()
-    )
-    schema[optional(const.CONF_ICON_TODAY, options, const.DEFAULT_ICON_TODAY)] = (
-        selector.IconSelector()
-    )
-    schema[optional(const.CONF_ICON_OVERDUE, options, const.DEFAULT_ICON_OVERDUE)] = (
+    # Single icon for all states
+    schema[optional(const.CONF_ICON, options, const.DEFAULT_ICON)] = (
         selector.IconSelector()
     )
 
-    # ========== SECTION: CHORE RECURRENCE ==========
-    # Legacy frequency field (for backward compatibility)
-    schema[optional(const.CONF_FREQUENCY, options, const.DEFAULT_FREQUENCY)] = (
-        selector.SelectSelector(
-            selector.SelectSelectorConfig(options=const.FREQUENCY_OPTIONS)
-        )
-    )
-
-    # New pattern-based recurrence
+    # ========== RECURRENCE PATTERN ==========
+    # Recurrence type selector
     schema[optional(const.CONF_RECURRENCE_TYPE, options, const.DEFAULT_RECURRENCE_TYPE)] = (
         selector.SelectSelector(
             selector.SelectSelectorConfig(options=const.RECURRENCE_TYPE_OPTIONS)
+        )
+    )
+
+    # Legacy frequency field (kept for backward compatibility)
+    schema[optional(const.CONF_FREQUENCY, options, const.DEFAULT_FREQUENCY)] = (
+        selector.SelectSelector(
+            selector.SelectSelectorConfig(options=const.FREQUENCY_OPTIONS)
         )
     )
 
@@ -253,13 +245,11 @@ async def combined_config_schema(
         )
     )
 
-    # ========== SUBSECTION: RANGE OF RECURRENCE ==========
-    # Start date
+    # ========== RANGE OF RECURRENCE ==========
     schema[optional(const.CONF_START_DATE, options, helpers.now().date())] = (
         selector.DateSelector()
     )
 
-    # End type selector
     schema[optional(const.CONF_END_TYPE, options, const.DEFAULT_END_TYPE)] = (
         selector.SelectSelector(
             selector.SelectSelectorConfig(options=const.END_TYPE_OPTIONS)
@@ -343,7 +333,7 @@ async def combined_config_schema(
     )
     schema[optional(const.CONF_DATE, options)] = selector.TextSelector()
 
-    # ========== SECTION: ALLOCATION ==========
+    # ========== PERSON ALLOCATION ==========
     schema[optional(const.CONF_PEOPLE, options, [])] = (
         selector.EntitySelector(
             selector.EntitySelectorConfig(
@@ -368,7 +358,7 @@ async def combined_config_schema(
             )
         )
 
-    # ========== SECTION: ADVANCED OPTIONS ==========
+    # ========== ADVANCED OPTIONS ==========
     schema[optional(const.CONF_FORECAST_DATES, options, const.DEFAULT_FORECAST_DATES)] = (
         selector.NumberSelector(
             selector.NumberSelectorConfig(
